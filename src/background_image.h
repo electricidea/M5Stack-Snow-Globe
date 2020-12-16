@@ -6,13 +6,7 @@ LCD Image Converter
 https://www.youtube.com/watch?v=Q1iVtLQOZOI
 
 Note:
-if M5.Lcd.drawBitmap()
-is not working (wrong colors)
-
-M5.Lcd.pushImage()
-is working:
-
-M5.Lcd.pushImage(0, 0, 320, 240, (uint16_t *)Ruthe_Weihnachtsmann);
+This image is for private use only. The copyright belongs to Ralph Rute (www.ruthe.de)
 
 */
 
