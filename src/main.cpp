@@ -7,7 +7,7 @@
  * 
  * Hague Nusseck @ electricidea
  * v0.01 16.December.2020
- * https://github.com/electricidea/M5Stack-xxxx
+ * https://github.com/electricidea/M5Stack-Snow-Globe
  * 
  * 
  * Distributed as-is; no warranty is given.
