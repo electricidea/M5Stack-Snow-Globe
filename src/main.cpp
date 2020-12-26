@@ -1,28 +1,57 @@
 /**************************************************************************
  * M5Stack IMU Snow-Globe
  * 
- * A simple program that turns an M5Stack Fire into a digital snow globe.
- * Note: The PSRAM is needed to fit the fullscreen sprite in 16bit.
- * The PSRAM must be activated in the compiler!
+ * A simple program that turns an M5Stack into a digital snow globe.
+ * Works with M5Stack Gray, FIRE and CORE2
  * 
  * Hague Nusseck @ electricidea
- * v0.01 16.December.2020
+ * v1.20 25.December.2020
  * https://github.com/electricidea/M5Stack-Snow-Globe
  * 
+ * Changelog:
+ * v1.01 = - initial version for the M5Stack-fire
+ * v1.20 = - 8 bit Sprite instead of 16 bit sprite
+ *         - NO PSRAM needed anymore
+ *         - works with M5Stack Gray and FIRE
+ *         - pushing the sprite without transparency color
+ * v1.21 = - compiler options for the different M5Stack devices
  * 
  * Distributed as-is; no warranty is given.
 **************************************************************************/
 
+//Select the device for which the code should be compiled and build:
+//#define M5STACK_GRAY
+#define M5STACK_FIRE
+//#define M5STACK_CORE2
+
+// REMEMBER:
+// Also change the "board" option in the platformio.ini:
+//
+// board = m5stack-grey
+// board = m5stack-fire
+// board = m5stack-core-esp32
+
 #include <Arduino.h>
 
-// This definition must be placed before the #include <M5Stack.h>
-// #define M5STACK_MPU6886 
-#define M5STACK_MPU9250 
-// #define M5STACK_MPU6050
-// #define M5STACK_200Q
-#include <M5Stack.h>
-// install the library:
-// pio lib install "M5Stack"
+#if defined (M5STACK_CORE2)
+  #include <M5Core2.h>
+  // install the library:
+  // pio lib install "m5stack/M5Core2"
+
+#else // M5STACK_GRAY or M5STACK_FIRE
+
+  // For the M5Stack FIRE and M5Stack-gray, this definition 
+  // must be placed before the #include <M5Stack.h>:
+  // #define M5STACK_MPU6886 
+  #define M5STACK_MPU9250 
+  // #define M5STACK_MPU6050
+  // #define M5STACK_200Q
+
+  #include <M5Stack.h>
+  // install the library:
+  // pio lib install "M5Stack"
+
+#endif
 
 // Free Fonts for nice looking fonts on the screen
 #include "Free_Fonts.h"
@@ -36,13 +65,11 @@
 #define SCREEN_WIDTH 320
 #define SCREEN_HEIGHT 240
 
+// acceleration values
 float accX = 0.0F;
 float accY = 0.0F;
 float accZ = 0.0F;
-
-/*
-
-Direction of acceleration:
+/*  Direction of acceleration:
 
       . down = +z
   - - - - -
@@ -55,14 +82,13 @@ Direction of acceleration:
      +y 
 */
 
-
 // bitmap of one snowflake (XBM Format)
 #include "snowflake.h"
 
 // background image as uint16_t RGB565 array
 #include "background_image.h"
 
-// structure for thr position of every snow flake
+// structure for the position and speed of every snow flake
 const int flake_max = 250;
 struct flakeObject
 {
@@ -77,9 +103,17 @@ flakeObject flakeArray[flake_max];
 // the pointer is used by pushSprite() to push it onto the LCD
 TFT_eSprite img = TFT_eSprite(&M5.Lcd);  
 
+// color depth of the sprite
+// can be: 1, 8 or 16
+// NOTE: 16bit fullscreen sprites require more memory. 
+// They only work with the M5Stack Fire or Core2 with activated PSRAM.
+#define SPRITE_COLOR_DEPTH 8
+
 void setup(void) {
   M5.begin();
-  M5.Power.begin();
+  #if defined (M5STACK_FIRE)
+    M5.Power.begin();
+  #endif
   M5.IMU.Init();
   // int the starting position of all snowflakes
   for(int i=0; i < flake_max; i++){
@@ -94,8 +128,8 @@ void setup(void) {
   M5.Lcd.fillScreen(TFT_BLACK);
   M5.Lcd.drawXBitmap((int)(320-logoWidth)/2, (int)(240-logoHeight)/2, logo, logoWidth, logoHeight, TFT_WHITE);
   delay(1500);
-  // Create a 16 bit sprite
-  img.setColorDepth(16);
+  // Create a sprite
+  img.setColorDepth(SPRITE_COLOR_DEPTH);
   img.createSprite(SCREEN_WIDTH, SCREEN_HEIGHT);
   // welcome text
   M5.Lcd.setTextColor(TFT_WHITE);
@@ -106,12 +140,14 @@ void setup(void) {
   M5.Lcd.setFreeFont(FF2);
   M5.Lcd.drawString("IMU Snow Globe", (int)(M5.Lcd.width()/2), (int)(M5.Lcd.height()/2), 1);
   M5.Lcd.setFreeFont(FF1);
-  M5.Lcd.drawString("Version 1.01 | 16.12.2020", (int)(M5.Lcd.width()/2), M5.Lcd.height()-20, 1);
+  M5.Lcd.drawString("Version 1.21 | 25.12.2020", (int)(M5.Lcd.width()/2), M5.Lcd.height()-20, 1);
   delay(1500);
 }
 
 void loop() {
   M5.update();
+  // mute speaker
+  dacWrite (25,0);
   // push the background image to the sprite
   img.pushImage(0, 0, 320, 240, (uint16_t *)background_image);
   // get the acceleration data
@@ -148,8 +184,6 @@ void loop() {
   }
   // After all snowflakes are drawn, pus the sprite
   // to TFT screen CGRAM at coordinate x,y (top left corner)
-  // Specify what colour is to be treated as transparent.
-  img.pushSprite(0, 0, TFT_TRANSPARENT);
-  delay(20);
-
+  img.pushSprite(0, 0);
+  delay(5);
 }
