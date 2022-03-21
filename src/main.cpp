@@ -20,8 +20,8 @@
 **************************************************************************/
 
 //Select the device for which the code should be compiled and build:
-//#define M5STACK_GRAY
-#define M5STACK_FIRE
+#define M5STACK_GRAY
+//#define M5STACK_FIRE
 //#define M5STACK_CORE2
 
 // REMEMBER:
@@ -322,8 +322,12 @@ void startPlaying() {
   }
   file = new AudioFileSourcePROGMEM(mp3_data, mp3_data_len);
   id3 = new AudioFileSourceID3(file);
-  out = new AudioOutputI2S(0, 0);
-  out->SetPinout(12, 0, 2);
+  #if defined (M5STACK_CORE2)
+    out = new AudioOutputI2S(0, 0);
+    out->SetPinout(12, 0, 2);
+  #else // M5STACK_GRAY or M5STACK_FIRE
+    out = new AudioOutputI2S(0, 1);
+  #endif
   out->SetOutputModeMono(true);
   out->SetGain(audioGain * gainfactor);
   mp3 = new AudioGeneratorMP3();
